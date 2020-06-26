@@ -16,6 +16,11 @@ export class AppComponent  {
   q4_2out: string;
   name = 'Angular ' + VERSION.major;
 
+
+  q10_in: any[];
+  q10_1out: string;
+  q10_2out: string;
+
 //2016 Q1 P1/////////////////////////////////////////////////////////
 processQ1P1 = () => {
   const output = this.q1_1in
@@ -192,6 +197,19 @@ decrypt = function(val) {
     return alphabetOrder[(alphabetOrder.indexOf(c) + parseInt(sector, 10)) % 26];
   }).join('');
   return [decrypted, parseInt(sector, 10)];
+}
+
+/////2016 Q10 /////////////////////////////////////////////////
+constructor() {
+
+}
+
+processQ10P1() {
+
+}
+
+processQ10P2() {
+  
 }
 
 
