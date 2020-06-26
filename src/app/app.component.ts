@@ -17,10 +17,11 @@ export class AppComponent  {
   name = 'Angular ' + VERSION.major;
 
 
-  q10_in: any[];
+  q10_in: Array<any> =  Source.InputQ10;
   q10_1out: string;
   q10_2out: string;
-
+  bots: Array<any> =[];
+  outputs: Array<any> =[];
 //2016 Q1 P1/////////////////////////////////////////////////////////
 processQ1P1 = () => {
   const output = this.q1_1in
@@ -201,16 +202,117 @@ decrypt = function(val) {
 
 /////2016 Q10 /////////////////////////////////////////////////
 constructor() {
+this.q10_in.map(line => {
+  if (line.match(/^value/)) { this.addChipValue(line); }
+  if (line.match(/^bot/)) { this.addChipDestinations(line); }
+})
 
+this.exchangeChips();
 }
 
 processQ10P1() {
-
+  this.q10_1out = this.findBot([61,17]);
 }
 
 processQ10P2() {
-  
+  this.q10_2out = this.multiplyOutputs();
 }
+
+addChipValue(line) {
+  const matches = line.match(/(\d+)/g).map(parseFloat);
+  const botId = matches[1];
+  const chip = matches[0];
+
+  const foundBot = this.bots.find(bot => (bot.botId === botId));
+  if (foundBot) {
+    foundBot.chips.push(chip);
+  } else {
+    this.bots.push({
+      botId,
+      chips: [chip],
+    });
+  }
+}
+
+addChipDestinations(line) {
+  const matches = line.match(/(\d+)/g).map(parseFloat);
+  const botId = matches[0];
+  const lowDestination = { type: line.match(/(?:low to )(\w+)/)[1], id: matches[1] };
+  const highDestination = { type: line.match(/(?:high to )(\w+)/)[1], id: matches[2] };
+
+  const foundBot = this.bots.find(bot => (bot.botId === botId));
+  if (foundBot) {
+    foundBot.lowDestination = lowDestination;
+    foundBot.highDestination = highDestination;
+    foundBot.hasExchanged = false;
+  } else {
+    this.bots.push({
+      botId,
+      lowDestination,
+      highDestination,
+      chips: [],
+      hasExchanged: false,
+    });
+  }
+}
+
+exchangeChips() {
+  const botsToRun = this.bots.filter((b)=>{
+    return b.chips.length === 2 && b.hasExchanged === false});
+
+  if (botsToRun.length > 0) {
+    for (const bot of botsToRun) {
+    
+      if (bot.highDestination.type === 'bot') {
+        const high = this.bots.find(item => item.botId === bot.highDestination.id)
+        high.chips.push(Math.max(...bot.chips));
+      }
+      
+      if (bot.lowDestination.type === 'bot') {
+        const low = this.bots.find(item => item.botId === bot.lowDestination.id)
+        low.chips.push(Math.min(...bot.chips));
+      }
+
+      if (bot.highDestination.type === 'output') {
+        this.outputs.push({
+          id: bot.highDestination.id,
+          chip: Math.max(...bot.chips),
+        });
+      }
+      if (bot.lowDestination.type === 'output') {
+        this.outputs.push({
+          id: bot.lowDestination.id,
+          chip: Math.min(...bot.chips),
+        });
+      }
+
+      bot.chips.sort();
+      bot.hasExchanged = true;
+    }
+    return this.exchangeChips();
+  } else {
+    return this.bots;
+  }
+}
+
+findBot(chips) {
+  chips = chips.sort();
+  const bot = this.bots.filter(bot => {
+    return bot.chips[0] === chips[0] && bot.chips[1] === chips[1];
+  })[0];
+  return bot.botId;
+}
+
+multiplyOutputs() {
+  const filteredOutputs =  this.outputs.filter(output => {
+    return (output.id === 0 || output.id === 1 || output.id === 2);
+  })
+
+  return filteredOutputs.reduce((acc, curr) => {
+    return acc * curr.chip;
+  }, 1)
+}
+
 
 
 }
